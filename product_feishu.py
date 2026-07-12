@@ -23,8 +23,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# 只有这些文件中的商品数据会发送到飞书；其他文件仍正常抓取并保存 Excel。
-FEISHU_FILE_NAMES = {"wsq.xlsx"}
+# Actions 版本只抓取并发送这些文件；其他 file_structure 配置全部跳过。
+RUN_FILE_NAMES = {"wsq.xlsx"}
+FEISHU_FILE_NAMES = RUN_FILE_NAMES
 from openpyxl.styles import PatternFill, Font, Alignment  #excel格式
 
 options = Options()
@@ -1188,6 +1189,9 @@ feishu_rows = []
 
 try:
     for file_name, sheets_dict in file_structure.items():
+        if file_name not in RUN_FILE_NAMES:
+            print(f"跳过未启用文件: {file_name}")
+            continue
         print(driver.capabilities['browserVersion'])
 
         print(f"开始处理文件: {file_name}")
