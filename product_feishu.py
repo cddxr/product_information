@@ -32,6 +32,11 @@ options = Options()
 options.add_argument("--window-size=1920,1080")
 options.add_argument("--start-maximized")
 options.add_argument("--disable-blink-features=AutomationControlled")
+options.add_argument("--lang=en-US,en")
+options.add_experimental_option("prefs", {"intl.accept_languages": "en-US,en"})
+amazon_proxy_server = os.getenv("AMAZON_PROXY_SERVER", "").strip()
+if amazon_proxy_server:
+    options.add_argument(f"--proxy-server={amazon_proxy_server}")
 if os.getenv("HEADLESS", "0") == "1":
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")

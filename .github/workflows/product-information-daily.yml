@@ -16,6 +16,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       HEADLESS: "1"
       CHROME_BINARY_PATH: C:\Program Files\Google\Chrome\Application\chrome.exe
+      AMAZON_PROXY_SERVER: http://127.0.0.1:10808
 
     steps:
       - name: Checkout
