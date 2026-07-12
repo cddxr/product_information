@@ -65,6 +65,7 @@ WAIT_SCROLL = 3
 WAIT_LONG = 20
 WAIT_SHORT = 5
 CONTINUE_RETRIES = 3
+AMAZON_ZIPCODE = os.getenv("AMAZON_ZIPCODE", "10001").strip()
 
 # def set_amazon_zipcode(driver, zipcode="10001"):
 #     print(f"切换邮编到 {zipcode}")
@@ -970,6 +971,75 @@ def open_amazon_page(driver, url):
     raise RuntimeError("Amazon Continue 页面多次处理失败")
 
 
+def prepare_amazon_us_context(driver):
+    try:
+        driver.get("https://api.ipify.org?format=json")
+        exit_ip = driver.find_element(By.TAG_NAME, "body").text.strip()
+        print(f"Chrome 代理出口 IP: {exit_ip}")
+        driver.get("https://ipapi.co/country/")
+        exit_country = driver.find_element(By.TAG_NAME, "body").text.strip()
+        print(f"Chrome 代理出口国家代码: {exit_country}")
+    except Exception as e:
+        print(f"无法检测 Chrome 代理出口 IP: {e}")
+
+    driver.get("https://www.amazon.com/?ref_=nav_logo")
+    time.sleep(WAIT_LOAD)
+    for name, value in (("lc-main", "en_US"), ("i18n-prefs", "USD")):
+        try:
+            driver.add_cookie(
+                {
+                    "name": name,
+                    "value": value,
+                    "domain": ".amazon.com",
+                    "path": "/",
+                }
+            )
+        except Exception as e:
+            print(f"Amazon Cookie 设置失败 {name}: {e}")
+
+    script = """
+        const zipcode = arguments[0];
+        const done = arguments[arguments.length - 1];
+        const body = new URLSearchParams({
+            locationType: "LOCATION_INPUT",
+            zipCode: zipcode,
+            storeContext: "generic",
+            deviceType: "web",
+            pageType: "Gateway",
+            actionSource: "glow"
+        });
+        fetch("/gp/delivery/ajax/address-change.html", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body,
+            credentials: "include"
+        })
+            .then(async response => done({
+                ok: response.ok,
+                status: response.status,
+                text: (await response.text()).slice(0, 200)
+            }))
+            .catch(error => done({ok: false, error: String(error)}));
+    """
+    try:
+        result = driver.execute_async_script(script, AMAZON_ZIPCODE)
+        print(f"Amazon 邮编设置 {AMAZON_ZIPCODE}: {result}")
+    except Exception as e:
+        print(f"Amazon 邮编设置失败 {AMAZON_ZIPCODE}: {e}")
+
+    driver.get("https://www.amazon.com/?ref_=nav_logo")
+    time.sleep(WAIT_LOAD)
+    try:
+        location_text = driver.find_element(By.ID, "glow-ingress-line2").text.strip()
+    except Exception:
+        location_text = "未读取到"
+    print(f"Amazon 当前配送位置: {location_text}")
+
+
 def wait_title(driver):
     return WebDriverWait(driver, WAIT_LONG).until(
         EC.presence_of_element_located((By.ID, "productTitle"))
@@ -1217,6 +1287,7 @@ db_conn = init_database(db_path)
 feishu_rows = []
 
 try:
+    prepare_amazon_us_context(driver)
     for file_name, sheets_dict in file_structure.items():
         if file_name not in RUN_FILE_NAMES:
             print(f"跳过未启用文件: {file_name}")
