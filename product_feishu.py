@@ -22,6 +22,9 @@ from webdriver_manager.core.driver_cache import DriverCacheManager
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# 只有这些文件中的商品数据会发送到飞书；其他文件仍正常抓取并保存 Excel。
+FEISHU_FILE_NAMES = {"wsq.xlsx"}
 from openpyxl.styles import PatternFill, Font, Alignment  #excel格式
 
 options = Options()
@@ -1304,7 +1307,8 @@ try:
                         ws.row_dimensions[ws.max_row].height = 120
 
                         save_successful_snapshot(db_conn, current_snapshot)
-                        feishu_rows.append(current_snapshot)
+                        if file_name in FEISHU_FILE_NAMES:
+                            feishu_rows.append(current_snapshot)
 
                         print(f" {brand} 商品抓取完成")
 
