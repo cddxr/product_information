@@ -13,20 +13,19 @@ jobs:
     env:
       PYTHONUTF8: "1"
       PYTHONIOENCODING: "utf-8"
+      HEADLESS: "1"
       CHROME_BINARY_PATH: C:\Program Files\Google\Chrome\Application\chrome.exe
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Verify Python dependencies
         shell: cmd
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --no-cache-dir -r requirements.txt
+        run: '"C:\Users\cddxr\AppData\Local\Programs\Python\Python313\python.exe" -c "import selenium, webdriver_manager, openpyxl, PIL, requests, dotenv"'
 
       - name: Scrape product information and send to Feishu
         shell: cmd
         env:
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
-        run: python product_feishu.py
+        run: '"C:\Users\cddxr\AppData\Local\Programs\Python\Python313\python.exe" product_feishu.py'

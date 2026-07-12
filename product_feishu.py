@@ -28,6 +28,11 @@ options = Options()
 options.add_argument("--window-size=1920,1080")
 options.add_argument("--start-maximized")
 options.add_argument("--disable-blink-features=AutomationControlled")
+if os.getenv("HEADLESS", "0") == "1":
+    options.add_argument("--headless=new")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
 chrome_binary_path = os.getenv(
     "CHROME_BINARY_PATH",
