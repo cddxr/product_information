@@ -1157,6 +1157,35 @@ def scroll_category_pages(category_name, first_page_url, max_pages=10):
     return all_screenshots
 
 
+def to_feishu_record(row):
+    captured_date = str(row.get("captured_at", "")).split("T")[0].replace("-", "/")
+
+    def as_integer(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    return {
+        "date": captured_date,
+        "category": row.get("sheet_name", ""),
+        "brand": row.get("brand", ""),
+        "url": row.get("url", ""),
+        "title": row.get("title", ""),
+        "main_rank": row.get("main_rank", ""),
+        "sub_rank": row.get("sub_rank", ""),
+        "price": row.get("price", ""),
+        "discount": row.get("discount", "无"),
+        "coupon": row.get("coupons", "无"),
+        "flavor_count": as_integer(row.get("flavor_count", 0)),
+        "size_count": as_integer(row.get("size_count", 0)),
+        "star_percent": row.get("stars", ""),
+        "rating": row.get("rating", ""),
+        "total_reviews": row.get("total_reviews", ""),
+        "change": row.get("remark", ""),
+    }
+
+
 def post_to_feishu(rows, batch_size=20):
     webhook = os.getenv("FEISHU_WEBHOOK_URL", "").strip()
     if not webhook:
@@ -1168,12 +1197,7 @@ def post_to_feishu(rows, batch_size=20):
 
     for start in range(0, len(rows), batch_size):
         batch = rows[start:start + batch_size]
-        payload = {
-            "source": "product_information",
-            "event": "amazon_product_information_synced",
-            "row_count": len(batch),
-            "rows": batch,
-        }
+        payload = {"records": [to_feishu_record(row) for row in batch]}
         response = requests.post(webhook, json=payload, timeout=30)
         if not response.ok:
             print(
@@ -1263,6 +1287,8 @@ try:
                             "brand": brand,
                             "url": url,
                             "title": title,
+                            "main_rank": main_rank,
+                            "sub_rank": "; ".join(sub_ranks),
                             "discount": discount if discount else "无",
                             "coupons": formatted_promotion,
                             "promotion_text": formatted_promotion,
